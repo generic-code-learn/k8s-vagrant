@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: 部署
 metadata:
   name: nginx-deployment
 spec:
@@ -31,4 +31,4 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 80
-      nodePort: 8090
+      nodePort: 30005
