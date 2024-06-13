@@ -1,0 +1,68 @@
+Vagrant.configure("2") do |config|
+  # 虚拟机的通用设置
+  config.vm.box = "focal@offical"
+  # 资源配置
+  configs = {
+    token: "k3s_token",
+    provider: "virtualbox",
+    master: {
+      hostname: "master",
+      ip: "10.0.20.10",
+      memory: "1500",
+      cpus: "2"
+    },
+    worker: {
+      hostname: "worker",
+      ip: "10.0.20.",
+      memory: "512",
+      cpus: "1"
+    }
+  }
+
+  # 定义主节点
+  config.vm.define "master" do |master|
+    master.vm.hostname = configs[:master][:hostname]
+    master.vm.network "private_network", ip: configs[:master][:ip]
+    master.ssh.insert_key = false
+    master.vm.synced_folder "./", "/vagrant"
+    master.vm.provider configs[:provider] do |vb|
+      vb.name = "k8s-" + configs[:master][:hostname]
+      vb.memory = configs[:master][:memory]
+      vb.cpus = configs[:master][:cpus]
+      vb.gui = false
+    end
+    master.vm.provision "shell", name: "install", path: "install_k3s_master.sh", privileged: true do |e|
+      # 设置环境变量
+      e.env = {
+        "ip": configs[:master][:ip],
+        "token": configs[:token]
+      }
+    end
+  end
+
+  # 定义工作节点
+  (1..1).each do |i|
+    config.vm.define "worker-#{i}" do |worker|
+      worker_ip = configs[:worker][:ip] + "#{19 + i}"
+      worker.vm.hostname = configs[:worker][:hostname] + "-" + "#{i}"
+      worker.vm.network "private_network", ip: "#{worker_ip}"
+      worker.ssh.insert_key = false
+      worker.vm.synced_folder "./", "/vagrant"
+      worker.vm.provider configs[:provider] do |vb|
+        vb.name = "k8s-" + configs[:master][:hostname] + "-" + "#{i}"
+        vb.memory = configs[:worker][:memory]
+        vb.cpus = configs[:worker][:cpus]
+        vb.gui = false
+      end
+
+      worker.vm.provision "shell", name: "install", path: "install_k3s_worker.sh", privileged: true do |e|
+        # 设置环境变量
+        e.env = {
+          "ip": "#{worker_ip}",
+          "master_ip": configs[:master][:ip],
+          "token": configs[:token]
+        }
+      end
+    end
+  end
+end

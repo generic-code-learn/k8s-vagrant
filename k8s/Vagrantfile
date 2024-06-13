@@ -1,0 +1,66 @@
+Vagrant.configure("2") do |config|
+  # 定义虚拟机的通用设置
+  config.vm.box = "debian12@office"
+  # 定义资源配置哈希
+  vm_configs = {
+    master_cf: {
+      hostname: "master",
+      ip: "10.0.12.10",
+      resources: {
+        memory: "2048",
+        cpus: 2
+      }
+    },
+    worker_cf: {
+      hostname: "worker",
+      ip: "10.0.12.",
+      resources: {
+        memory: "1024",
+        cpus: 1
+      }
+    }
+  }
+
+  # 定义主节点
+  config.vm.define "master" do |master|
+    master.vm.hostname = vm_configs[:master_cf][:hostname]
+    master.vm.network "private_network", ip: vm_configs[:master_cf][:ip]
+    master.ssh.insert_key = false
+    # master.ssh.username = "vagrant"
+    # master.ssh.password = "vagrant"
+    master.vm.synced_folder "./", "/vagrant"
+    master.vm.provider "virtualbox" do |vb|
+      vb.memory = vm_configs[:master_cf][:resources][:memory]
+      vb.cpus = vm_configs[:master_cf][:resources][:cpus]
+      vb.name = vm_configs[:master_cf][:hostname]
+    end
+    master.vm.provision "shell",
+                        name: "install_k8s_master",
+                        path: "install_k8s_master.sh",
+                        privileged: false do |e|
+      # 设置环境变量
+      e.env = { "master_ip" => vm_configs[:master_cf][:ip] }
+    end
+  end
+
+  # 定义工作节点
+  (1..2).each do |i|
+    config.vm.define "worker-#{i}" do |worker|
+      worker.vm.hostname = vm_configs[:worker_cf][:hostname] + "#{i}"
+      worker.vm.network "private_network",
+                        ip: vm_configs[:worker_cf][:ip] + "#{19 + i}"
+      worker.ssh.insert_key = false
+      worker.vm.synced_folder "./", "/vagrant"
+      worker.vm.provider "virtualbox" do |vb|
+        vb.memory = vm_configs[:worker_cf][:resources][:memory]
+        vb.cpus = vm_configs[:worker_cf][:resources][:cpus]
+        vb.name = vm_configs[:worker_cf][:hostname] + "-" + "#{i}"
+      end
+
+      worker.vm.provision "shell",
+                          name: "install_k8s_worker",
+                          path: "install_k8s_worker.sh",
+                          privileged: false
+    end
+  end
+end
