@@ -29,18 +29,13 @@ sudo sed -i 's/enforcing/disabled/' /etc/selinux/config && setenforce 0
 sudo swapoff -a
 sudo sed -ri 's/.*swap.*/#&/' /etc/fstab
 
-# 设置本机host
-echo "127.0.0.1 $(hostname)" | sudo tee -a /etc/hosts
-# export http_proxy=192.168.2.116:7897
-# export https_proxy=192.168.2.116:7897
-
 # 设置时区
 sudo timedatectl set-timezone Asia/Shanghai
 # 同步时时间
 sudo apt update
 sudo apt install -q -y ntp
 sudo systemctl start ntp
-sudo systemctl enable ntpsec.service
+sudo systemctl enable ntp
 
 # 安装containerd
 sudo apt install -y containerd
@@ -51,15 +46,16 @@ sudo sed -i '/SystemdCgroup/s/false/true/' /etc/containerd/config.toml
 sudo systemctl enable --now containerd
 
 sudo apt install -y apt-transport-https ca-certificates curl gpg
+sudo mkdir -p /etc/apt/keyrings/
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.ustc.edu.cn/kubernetes/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 sudo apt update
 sudo apt install -q -y kubelet kubeadm kubectl
 sudo systemctl enable kubelet
 sudo apt-mark hold kubelet kubeadm kubectl
 
 # 初始化 Kubernetes 主节点
-sudo kubeadm init --apiserver-advertise-address=${master_ip} --pod-network-cidr=10.244.0.0/16 --service-cidr=10.200.0.0/16
+sudo kubeadm init --apiserver-advertise-address=${master_ip} --pod-network-cidr=10.244.0.0/16 --service-cidr=10.250.0.0/16
 
 # export KUBECONFIG=/etc/kubernetes/admin.conf
 # mkdir -p $HOME/.kube
@@ -67,7 +63,7 @@ sudo kubeadm init --apiserver-advertise-address=${master_ip} --pod-network-cidr=
 # sudo chown $(id -u):$(id -g) $HOME/.kube/config
 echo 'export KUBECONFIG=/etc/kubernetes/admin.conf' | sudo tee -a /root/.bashrc
 echo 'alias k='kubectl'' | sudo tee -a /root/.bashrc
-source /root/.bashrc
+# source /root/.bashrc
 
 # 安装网络插件
 # sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
