@@ -39,4 +39,3 @@ sudo systemctl enable --now containerd
 
 # 安装k3s
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --token ${token} --node-ip ${ip} --advertise-address ${ip} --flannel-iface ${iface}" sh -
-echo 'alias k='kubectl'' | sudo tee -a /root/.bashrc

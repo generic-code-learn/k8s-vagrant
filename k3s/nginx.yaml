@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: 部署
+kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
