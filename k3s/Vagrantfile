@@ -26,7 +26,7 @@ Vagrant.configure("2") do |config|
     master.ssh.insert_key = false
     master.vm.synced_folder "./", "/vagrant"
     master.vm.provider configs[:provider] do |vb|
-      vb.name = "k8s-" + configs[:master][:hostname]
+      vb.name = "k3s-" + configs[:master][:hostname]
       vb.memory = configs[:master][:memory]
       vb.cpus = configs[:master][:cpus]
       vb.gui = false
@@ -49,7 +49,7 @@ Vagrant.configure("2") do |config|
       worker.ssh.insert_key = false
       worker.vm.synced_folder "./", "/vagrant"
       worker.vm.provider configs[:provider] do |vb|
-        vb.name = "k8s-" + configs[:master][:hostname] + "-" + "#{i}"
+        vb.name = "k3s-" + configs[:master][:hostname] + "-" + "#{i}"
         vb.memory = configs[:worker][:memory]
         vb.cpus = configs[:worker][:cpus]
         vb.gui = false
