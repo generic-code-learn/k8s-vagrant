@@ -1,17 +1,18 @@
 Vagrant.configure("2") do |config|
   # 定义虚拟机的通用设置
   config.vm.box = "focal@offical"
-  # 定义资源配置哈希
-  vm_configs = {
-    master_cf: {
+
+  # 定义资源配置
+  configs = {
+    master: {
       hostname: "master",
-      ip: "10.0.20.50",
+      ip: "10.0.20.20",
       resources: {
         memory: "1800",
         cpus: 2
       }
     },
-    worker_cf: {
+    worker: {
       hostname: "worker",
       ip: "10.0.20.",
       resources: {
@@ -23,42 +24,49 @@ Vagrant.configure("2") do |config|
 
   # 定义主节点
   config.vm.define "master" do |master|
-    master.vm.hostname = vm_configs[:master_cf][:hostname]
-    master.vm.network "private_network", ip: vm_configs[:master_cf][:ip]
+    master.vm.hostname = configs[:master][:hostname]
+    master.vm.network "private_network", ip: configs[:master][:ip]
     master.ssh.insert_key = false
     master.vm.synced_folder "./", "/vagrant"
     master.vm.provider "virtualbox" do |vb|
-      vb.memory = vm_configs[:master_cf][:resources][:memory]
-      vb.cpus = vm_configs[:master_cf][:resources][:cpus]
-      vb.name = "k8s-" + vm_configs[:master_cf][:hostname]
+      vb.memory = configs[:master][:resources][:memory]
+      vb.cpus = configs[:master][:resources][:cpus]
+      vb.name = "k8s-" + configs[:master][:hostname]
     end
     master.vm.provision "shell",
                         name: "install_k8s_master",
                         path: "install_k8s_master.sh",
                         privileged: false do |e|
       # 设置环境变量
-      e.env = { "master_ip" => vm_configs[:master_cf][:ip] }
+      e.env = {
+        ip: configs[:master][:ip],
+        hostname: configs[:master][:hostname]
+      }
     end
   end
 
   # 定义工作节点
-  (1..1).each do |i|
+  (1..2).each do |i|
     config.vm.define "worker-#{i}" do |worker|
-      worker.vm.hostname = vm_configs[:worker_cf][:hostname] + "#{i}"
-      worker.vm.network "private_network",
-                        ip: vm_configs[:worker_cf][:ip] + "#{54 + i}"
+      ip = configs[:worker][:ip] + "#{24 + i}"
+      hostname = configs[:worker][:hostname] + "#{i}"
+      worker.vm.hostname = "#{hostname}"
+      worker.vm.network "private_network", ip: "#{ip}"
       worker.ssh.insert_key = false
       worker.vm.synced_folder "./", "/vagrant"
       worker.vm.provider "virtualbox" do |vb|
-        vb.memory = vm_configs[:worker_cf][:resources][:memory]
-        vb.cpus = vm_configs[:worker_cf][:resources][:cpus]
-        vb.name = "k8s-" +  vm_configs[:worker_cf][:hostname] + "-" + "#{i}"
+        vb.memory = configs[:worker][:resources][:memory]
+        vb.cpus = configs[:worker][:resources][:cpus]
+        vb.name = "k8s-" + configs[:worker][:hostname] + "-" + "#{i}"
       end
 
       worker.vm.provision "shell",
                           name: "install_k8s_worker",
                           path: "install_k8s_worker.sh",
-                          privileged: false
+                          privileged: false do |e|
+        # 设置环境变量
+        e.env = { ip: "#{ip}", hostname: "#{hostname}" }
+      end
     end
   end
 end

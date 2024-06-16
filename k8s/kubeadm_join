@@ -1,1 +1,0 @@
-kubeadm join 10.0.20.50:6443 --token ce6m5q.bmk2nkresmonns94 --discovery-token-ca-cert-hash sha256:516e910029d9a46127f1167661e1c8d0fd43d45821854567152b12aaf4b1f08f 
